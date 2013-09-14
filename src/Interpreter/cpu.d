@@ -35,16 +35,19 @@ enum : int
 	DEBUG = 0x12, 
 	INTERRUPT = 0x13,
 	FLAGSHOW = 0x14, 
-	IFE = 0x15, 
-	IFNE = 0x16, 
+	IFE = 0x15, 			/* If equal */
+	IFNE = 0x16, 			/* If not equal */
 	INC = 0x17,
 	DEC = 0x18,   
 	JMP = 0x19,
-	EOC = 0x20,
+	DEF = 0x20,
+	EOC = 0x21,				//End of code
 
 	/* Symbols */
-	NL = 0xC0,
-	EOB = 0xC1, 
+	NL = 0xC0,				//New line
+	EOB = 0xC1, 			//End of block
+	COM = 0xC2, 			//Comment
+	STR = 0xC3, 			//String identifiers, i.e. ' " '
 
 	/* Registers */
 	REG0 = 0xF0,
@@ -70,6 +73,7 @@ struct token
 	}
 }
 
+int[string] variable;
 bool debug_bit = false; 
 int flagA = 0;
 int flagB = 0;
@@ -145,6 +149,7 @@ void executeInt()
 		}
 		return; 
 	}
+
 	if(reg[0].nData == 3 && reg[1].cData != null && reg[2].nData != 0)
 	{
 		dPrint("Executing read interrupt!");
@@ -208,10 +213,29 @@ void decode(string characters)
 	while(i < tokens.length && tokens[i].ptr != null)
 	{
 		string currentToken = tokens[i];
-		if(indexOf(currentToken, "0x") != -1)
+
+		int * varTest = currentToken in variable; /* Will be null if the key doesn't exist */
+		if(varTest) /* If the key exists */
 		{
-			mem[i].type = 0;
-			mem[i].opcode = toHexadecimal(currentToken);
+			mem[i].type = 1;
+			mem[i].nData = variable[currentToken]; /* Replace it in memory with it's value */
+		} 
+		else if(indexOf(currentToken, "0x") != -1)
+		{
+			if(currentToken == "0x20")
+			{
+				dPrint("DEF OPCODE found!");
+				i++; 
+				string varName = tokens[i];
+				i++;
+				int varVal = toInt(tokens[i]);
+				variable[varName] =  varVal;
+			}
+			else
+			{
+				mem[i].type = 0;
+				mem[i].opcode = toHexadecimal(currentToken);
+			}
 		}
 		else if(isNumeric(currentToken))
 		{
@@ -236,6 +260,14 @@ void execute()
 	{
 		switch(mem[i].opcode)
 		{
+			case COM:
+				dPrint("COM OPCODE found!");
+				i++;
+				while(mem[i].opcode != COM)
+				{
+					i++;
+				}
+				break;
 			case INC:
 				dPrint("INC OPCODE found");
 				i++;
@@ -359,9 +391,7 @@ void execute()
 					break;
 				}
 				int num = mem[i].nData;
-				writeln("NumData = ", num);
-				writeln("RegNum = ", regNum);
-				writeln("RegData = ", reg[regNum].nData);
+
 				if(reg[regNum].nData == num)
 				{
 					flagA = 1;
@@ -406,9 +436,9 @@ void execute()
 				int regA = mem[i].opcode;
 				string data;
 				i++;
-				if(mem[i].cData.ptr != null) /* Only way I could get it to differentiate strings and numbers. */
+				if(mem[i].opcode == STR && mem[++i].cData.ptr != null) /* Only way I could get it to differentiate strings and numbers. */
 				{
-					while(mem[i].opcode != NOP)
+					while(mem[i].opcode != STR)
 					{
 						data ~= mem[i].cData ~ " ";
 						i++;
@@ -545,10 +575,18 @@ void execute()
 				dPrint("PUSH OPCODE found");
 				i++;
 				string pushString;
-				while(mem[i].opcode != NOP)
+				if(mem[i].opcode == STR)
 				{
-					pushString ~= mem[i].cData ~ " ";
 					i++;
+					while(mem[i].opcode != STR)
+					{
+						pushString ~= mem[i].cData ~ " ";
+						i++;
+					}
+				}
+				else
+				{
+					pushString = toString(mem[i].nData);
 				}
 				push(pushString);
 				break;

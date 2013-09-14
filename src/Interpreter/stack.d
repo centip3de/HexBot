@@ -1,35 +1,19 @@
 module stack;
 import std.stdio;
 import std.string;
+import std.container;
 import std.c.stdlib : exit;
 
-struct stackT
-{
-	string[1024] contents;
-	int top;
-}
-
-stackT stackP;
-
-bool stackIsEmpty()
-{
-	return stackP.top <= 0;
-}
+auto stackP = SList!string([""]);
 
 void push(string element)
 {
-	int top = stackP.top++;
-	stackP.contents[top] = element;
+	stackP.insert(element);
 }
 
 string pop()
 {
-	if(stackIsEmpty())
-	{
-		writeln("Error: Cannont pop element from empty stack!");
-		exit(1);
-	}
-	int top = --stackP.top;
-	string data = stackP.contents[top];
+	string data = stackP.front;
+	stackP.removeFront(1);
 	return data;
 }

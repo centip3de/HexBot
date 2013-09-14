@@ -1,3 +1,39 @@
+**Working version 0.2.8 updates:**
+
+General:
+* Added more comments to the enums, for clarity sake.
+* Added the ability to write comments in code!
+* Added new symbol to the enum (0xC2) for comments. 
+* Added the ability to write and use basic static integer-only variables!
+* Added new opcode for defining variables (0x20)
+* Added new opcode for string symbol ' " ' (0xC3)
+* Added stack usage example to /examples (Stack.gl)
+* Added variable usage example to /examples (Variables.gl)
+* Added comment usage example to /examples (Comments.gl)
+* Added comments to every line of every example, for clarity sake.
+* Moved EOC opcode to 0x21 from 0x20
+* Reworked stack algorithm. It is now implemented in a linked list. 
+* The stack can now grow large as your computer can contain!
+* You can now pop and push numbers, as well as strings. 
+* You MUST now surround all strings in the string symbol opcode (0xC3)
+
+CPU.d:
+* Added 'variable', an associative array to hold all variables
+* Added new if statements to 'execute()' for comments
+* Changed 'decode()' to allow for variable definition
+* Changed 'decode()' to allow for variable find-and-replace
+* Changed 'decode()' to allow for associative array key finding
+* Changed quite a bit of code in 'execute()' to force new string symbol use
+* Removed previous debug code from CMP OPCode
+
+Stack.d:
+* Significantly reduced the code size
+* Added std.container import, in order to use D's builtin linked lists
+* Reworked 'push()' to work with the new stack
+* Reworked 'pop()' to work with the new stack
+* Removed 'stackIsEmpty()' function, as it's no longer needed
+* Removed stack struct, as it's no longer needed
+
 **Working version 0.2.7 updates:**
 
 General:
