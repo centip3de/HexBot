@@ -10,5 +10,5 @@
 
 0xF 0xF0 2						      0xC2 Moving 2 into Register 0 (Setting up the read interrupt) 0xC2
 0xF 0xF1 0xC3 stdout 0xC3		0xC2 Moving the string, "stdout" into Register 3 (Writing to standard output) 0xC2
-0xF 0xF2 0xC0					      0xC2 Moving a new line symbol into Register 2 (Printing out a new line, for looks)
+0xF 0xF2 0xC0					      0xC2 Moving a new line symbol into Register 2 (Printing out a new line, for looks) 0xC2
 0x13							          0xC2 Calling an interrupt to be run 0xC2
