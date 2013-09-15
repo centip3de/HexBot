@@ -328,6 +328,7 @@ void execute()
 				dPrint("XOR OPCODE found");
 				i++;
 				int xor = mem[i].nData;
+				i++;
 				int regNum = mem[i].opcode;
 				string foo = getData(regNum);
 				int bar = toInt(foo);
@@ -360,6 +361,7 @@ void execute()
 				int rshift = mem[i].nData;
 				rshift = toInt(getData(regNum)) >> rshift;
 				setReg(regNum, toString(rshift), 0);
+				break;
 			case LSHIFT:
 				dPrint("LSHIFT OPCODE found");
 				i++;
@@ -368,10 +370,12 @@ void execute()
 				int lshift = mem[i].nData;
 				lshift = toInt(getData(regNum)) << lshift;
 				setReg(regNum, toString(lshift), 0);
+				break;
 			case FLAGSHOW:
 				dPrint("FLAGSHOW OPCODE found");
 				writefln("Flag A: %d", flagA);
 				writefln("Flag B: %d", flagB);
+				break;
 			case CMP:
 				dPrint("CMP OPCODE found");
 				i++;
@@ -401,6 +405,7 @@ void execute()
 					flagA = 0;
 				}
 				writeln("FlagA = ", flagA);
+				break;
 			case INTERRUPT:
 				dPrint("Interrupt OPCODE found");
 				if(isInterrupt())
@@ -417,6 +422,7 @@ void execute()
 			case MEMSHOW:
 				dPrint("MEMSHOW OPCODE found");
 				memShow();
+				break;
 			case DEBUG:
 				if(debug_bit == false)
                 {
