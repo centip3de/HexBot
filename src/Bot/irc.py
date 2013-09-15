@@ -26,7 +26,7 @@ while 1:
         bar = open("input.gl", "w")
         bar.write(foo[-1])
         bar.close()
-        cproc = Popen(["../../bin/main", "input.gl"], stdout = PIPE, close_fds = True)
+        cproc = Popen(["../../bin/intr", "input.gl"], stdout = PIPE, close_fds = True)
         output = cproc.stdout.readlines()
         lines = ""
         for line in output:
