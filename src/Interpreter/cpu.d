@@ -159,7 +159,7 @@ void executeInt()
 			string buf;
 			if((buf = stdin.readln()) !is null) /* If it's not null (!= gave a conflicting types error) */ 
 			{
-				setReg(REG4, chop(buf), 1);
+				setReg(REG4, chop(buf));
 			}
 			else
 			{
@@ -171,7 +171,7 @@ void executeInt()
 			dPrint("Reading from file");
 			string fileName = reg[1].cData;
 			auto text = read(fileName, reg[2].nData);
-			setReg(4, cast(string)text, 1);
+			setReg(4, cast(string)text);
 		}
 		return;
 	}
@@ -201,6 +201,25 @@ void memShow()
 int toHexadecimal(string data)
 {
 	return to!int(strtoul(toStringz(data), null, 16));
+}
+
+void setRegOnOp(ref int i, int delegate(int,int) operation)
+{
+	int arg = mem[++i].nData;
+	int regNum = mem[++i].opcode;
+	int reg = toInt(getData(regNum));
+
+	setReg(regNum, operation(reg, arg));
+}
+
+int getNextInt(ref int i)
+{
+	i++;
+	if(isRegister(mem[i].opcode))
+	{
+		return toInt(getData(mem[i].opcode));
+	}
+	return mem[i].nData;
 }
 
 void decode(string characters)
@@ -274,7 +293,7 @@ void execute()
 				int regNum = mem[i].opcode;
 				int data = toInt(getData(regNum));
 				data++;
-				setReg(regNum, toString(data), 0);
+				setReg(regNum, data);
 				break;
 			case DEC:
 				dPrint("DEC OPCODE found");
@@ -282,7 +301,7 @@ void execute()
 				int regNum = mem[i].opcode;
 				int data = toInt(getData(regNum));
 				data--;
-				setReg(regNum, toString(data), 0);
+				setReg(regNum, data);
 				break;
 			case NOP:
 				dPrint("NOP OPCODE found, doing nothing.");
@@ -326,50 +345,23 @@ void execute()
 				break;
 			case XOR:
 				dPrint("XOR OPCODE found");
-				i++;
-				int xor = mem[i].nData;
-				i++;
-				int regNum = mem[i].opcode;
-				string foo = getData(regNum);
-				int bar = toInt(foo);
-				xor = bar ^ xor;
-				setReg(regNum, toString(xor), 0);
+				setRegOnOp(i, (x,y) => x ^ y);
 				break;
 			case OR:
 				dPrint("OR OPCODE found");
-				i++;
-				int or = mem[i].nData;
-				i++;
-				int regNum = mem[i].opcode;
-				or = toInt(getData(regNum)) | or;
-				setReg(regNum, toString(or), 0);
+				setRegOnOp(i, (x,y) => x | y);
 				break;
 			case AND:
 				dPrint("AND OPCODE found");
-				i++;
-				int and = mem[i].nData;
-				i++;
-				int regNum = mem[i].opcode;
-				and = toInt(getData(regNum)) & and;
-				setReg(regNum, toString(and), 0);
+				setRegOnOp(i, (x,y) => x & y);
 				break;
 			case RSHIFT:
 				dPrint("RSHIFT OPCODE found");
-				i++;
-				int regNum = mem[i].opcode;
-				i++;
-				int rshift = mem[i].nData;
-				rshift = toInt(getData(regNum)) >> rshift;
-				setReg(regNum, toString(rshift), 0);
+				setRegOnOp(i, (x,y) => x >> y);
 				break;
 			case LSHIFT:
 				dPrint("LSHIFT OPCODE found");
-				i++;
-				int regNum = mem[i].opcode;
-				i++;
-				int lshift = mem[i].nData;
-				lshift = toInt(getData(regNum)) << lshift;
-				setReg(regNum, toString(lshift), 0);
+				setRegOnOp(i, (x,y) => x << y);
 				break;
 			case FLAGSHOW:
 				dPrint("FLAGSHOW OPCODE found");
@@ -451,7 +443,7 @@ void execute()
 					}
 					if(isRegister(regA))
 					{
-						setReg(regA, chop(data), 1); /* Remove the '\n\r' and space */
+						setReg(regA, chop(data)); /* Remove the '\n\r' and space */
 					}
 				}
 				else
@@ -459,7 +451,7 @@ void execute()
 					int info = mem[i].nData;
 					if(isRegister(regA))
 					{
-						setReg(regA, toString(info), 0);
+						setReg(regA, info);
 					}
 				}
 				break;
@@ -474,7 +466,7 @@ void execute()
 				string data = getData(regNumB);
 				if(isRegister(regTest) && isRegister(regTestB))
 				{
-					setReg(regNumA, data, 0);
+					setReg(regNumA, data);
 				}
 				break;
             case REGSHOW:
@@ -483,99 +475,19 @@ void execute()
 				break;
 			case ADD:
 				dPrint("ADD OPCODE found");
-				int first, second, result;
-				i++;
-				if(isRegister(mem[i].opcode))
-				{
-					first = toInt(getData(mem[i].opcode));
-				}
-				else
-				{
-					first = mem[i].nData;
-				}
-				i++;
-				if(isRegister(mem[i].opcode))
-				{
-					second = toInt(getData(mem[i].opcode));
-				}
-				else
-				{
-				 	second = mem[i].nData;
-				}
-				result = first + second;
-				setReg(REG0, toString(result), 0);
+				setReg(REG0, getNextInt(i) + getVal(i));
 				break;
 			case SUB:
 				dPrint("SUB OPCODE found");
-				int first, second, result;
-				i++;
-				if(isRegister(mem[i].opcode))
-				{
-					first = toInt(getData(mem[i].opcode));
-				}
-				else
-				{
-					first = mem[i].nData;
-				}
-				i++;
-				if(isRegister(mem[i].opcode))
-				{
-					second = toInt(getData(mem[i].opcode));
-				}
-				else
-				{
-					second = mem[i].nData;
-				}
-				result = first - second;
-				setReg(REG0, toString(result), 0);
+				setReg(REG0, getNextInt(i) - getVal(i));
 				break;
 			case MUL:
 				dPrint("MUL OPCODE found");
-				int first, second, result;
-				i++;
-				if(isRegister(mem[i].opcode))
-				{
-					first = toInt(getData(mem[i].opcode));
-				}
-				else
-				{
-					first = mem[i].nData;
-				}
-				i++;
-				if(isRegister(mem[i].opcode))
-				{
-					second = toInt(getData(mem[i].opcode));
-				}
-				else
-				{
-					second = mem[i].nData;
-				}
-				result = first * second;
-				setReg(REG0, toString(result), 0);
+				setReg(REG0, getNextInt(i) * getVal(i));
 				break;
 			case DIV:
 				dPrint("DIV OPCODE found");
-				int first, second, result;
-				i++;
-				if(isRegister(mem[i].opcode))
-				{
-					first = toInt(getData(mem[i].opcode));
-				}
-				else
-				{
-					first = mem[i].nData;
-				}
-				i++;
-				if(isRegister(mem[i].opcode))
-				{
-					second = toInt(getData(mem[i].opcode));
-				}
-				else
-				{
-					second = mem[i].nData;
-				}
-				result = first / second;
-				setReg(REG0, toString(result), 0);
+				setReg(REG0, getNextInt(i) / getVal(i));
 				break;
 			case PUSH:
 				dPrint("PUSH OPCODE found");
@@ -602,7 +514,7 @@ void execute()
 				int regNum = mem[i].opcode;
 				if(isRegister(regNum))
 				{
-					setReg(regNum, pop(), 1);
+					setReg(regNum, pop());
 				}
 				else if(!isRegister(regNum))
 				{
