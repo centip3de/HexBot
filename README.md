@@ -14,6 +14,9 @@
 
 * Help: Check out the /examples folder for example programs.
 
+Building
+--------
+Run `make` to build the interpreter. To set up the git hooks for development, run `make dev`.
   
 
 
