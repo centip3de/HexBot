@@ -46,7 +46,7 @@ void displayReg()
 	}
 }
 
-void setReg(int regNum, string data, int dataType)
+void setReg(int regNum, string data)
 {
 	if(!isRegister(regNum))
 	{
@@ -54,21 +54,20 @@ void setReg(int regNum, string data, int dataType)
 		exit(1);
 	}
 	regNum = toReg(regNum);
-	if(dataType == 0) /* Integer */
+	reg[regNum].nData = 0; /* Clearing out the numerical side of the register */
+	reg[regNum].cData = data; /* Assigning the string */
+}
+
+void setReg(int regNum, int data)
+{
+	if(!isRegister(regNum))
 	{
-		reg[regNum].cData = "";
-		reg[regNum].nData = toInt(data);
-	}
-	else if(dataType == 1)
-	{
-		reg[regNum].nData = 0; /* Clearing out the numerical side of the register */
-		reg[regNum].cData = data; /* Assigning the string */
-	}
-	else
-	{
-		writefln("Error: Type %d unknown!", dataType);
+		writefln("Error: %d is not a valid register number.", regNum);
 		exit(1);
 	}
+	regNum = toReg(regNum);
+	reg[regNum].cData = "";
+	reg[regNum].nData = data;
 }
 
 string getData(int regNum)
