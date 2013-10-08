@@ -17,6 +17,7 @@ struct register
 
 alias to!(string) toString;
 
+/* Registers start at 0xF0 and we want the register number in 0-9, rather than 0xF0-0xF9 */
 int toReg(int data)
 {
 	return data - 0xF0;
@@ -35,13 +36,13 @@ void displayReg()
 {
 	for(int i = 0; i < 10; i++)
 	{
-		if(reg[i].nData == 0)
+		if(reg[i].nData)
 		{
-			writeln("REG " ~ toString(i) ~ ": " ~ reg[i].cData);
+			writefln("REG %d: %d", i, reg[i].nData);
 		}
 		else
 		{
-			writeln("REG " ~ toString(i) ~ ": " ~ toString(reg[i].nData)); 
+			writefln("REG %d: %s", i, reg[i].cData); 
 		}
 	}
 }
@@ -85,6 +86,7 @@ string getData(int regNum)
 	} 
 	return toString(reg[regNum].nData);
 }
+
 
 bool isRegEmpty(int regNum)
 {

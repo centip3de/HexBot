@@ -6,7 +6,7 @@ int main(string[] args)
 {
 	if(args.length != 2)
 	{
-		writeln("No input file selected!");
+		writeln("Usage: ./main <filename.gl>");
 		exit(1);
 	}
 	run(args[1]);

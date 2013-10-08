@@ -1,3 +1,36 @@
+**Working version 0.2.9 updates:**
+
+General:
+* Added the ability to perform string comparisons! 
+* Added labels! (Label syntax is as follows, "0x21 LABEL_NAME ..(your code here).. 0xC1")
+* Added in static string variables! (Variable syntax is as you would expect "0x20 StringVariable 0xC3 I'm a string! 0xC3")
+* Added in the CALL OPCode! You can now call labels much like you would a function! (Syntax is "0x22 LABEL_NAME")
+* Added in the RET OPCode! You can now return from a label execution! (Syntax is "0x21 LABEL_NAME ..(your code here).. 0xC1 0x23")
+* Added more examples (Comparisons.gl, Labels.gl, CallRet.gl, IfStatements.gl)
+* Moved EOC opcode to 0x24
+* Changed MOV to 'SWP', as RegSet (0xF) already does what x86 ASM mov does and we needed a SWP OPcode anyway. Syntax: '0x1 destination source' where both destionation and source are registers. 
+* Fixed syntax errors from recent push request
+* Fixed formatting errors
+* Fixed minor gramatical errors
+* Removed old unused code
+
+CPU.d:
+* Reworked the entire comparison logic, now quite a bit clearer and more efficient
+* Can now compare strings using the comparison opcode
+* Added a better error message for unknown tokens 
+* Added LBL (label) to CPU execute() to not execute label code until the label is called
+* Actually using the builtin types set during parsing, instead of hacking it together
+* Shortened jump code considerably 
+* Edited find/replace code in decode() to account for string variable detection as well as integer variable detection
+
+Main.d:
+* Added usage statement when incorrect number of arguments are used
+
+Reisters.d:
+* Fixed formatting bug that caused regShow() to crash
+* Removed unnecessary calls to 'toString'
+
+
 **Working version 0.2.8 updates:**
 
 General:

@@ -15,7 +15,7 @@ enum : int
 {
 	/* OPCODES */
 	NOP = 0x0,
-	MOV = 0x1,
+	SWP = 0x1,
 	ADD = 0x2,
 	SUB = 0x3,
 	MUL = 0x4,
@@ -41,13 +41,16 @@ enum : int
 	DEC = 0x18,   
 	JMP = 0x19,
 	DEF = 0x20,
-	EOC = 0x21,				//End of code
+	LBL = 0x21,			// Label 
+	CALL = 0x22,
+	RET = 0x23,
+	EOC = 0x24,			//End of code
 
 	/* Symbols */
 	NL = 0xC0,				//New line
 	EOB = 0xC1, 			//End of block
 	COM = 0xC2, 			//Comment
-	STR = 0xC3, 			//String identifiers, i.e. ' " '
+	STR = 0xC3, 			//String identifier, i.e. ' " '
 
 	/* Registers */
 	REG0 = 0xF0,
@@ -73,8 +76,11 @@ struct token
 	}
 }
 
-int[string] variable;
+int[string] intVariable;
+string[string] strVariable;
+int[string] labels;
 bool debug_bit = false; 
+int returnNum;
 int flagA = 0;
 int flagB = 0;
 token mem[];
@@ -175,7 +181,7 @@ void executeInt()
 		}
 		return;
 	}
-	dPrint("executeInt()has ran, but nothing was executed.");
+	dPrint("executeInt() has ran, but nothing was executed.");
 }
 
 void memShow()
@@ -185,15 +191,15 @@ void memShow()
 	{
 		if(mem[i].type == 0)
 		{
-			writefln("%d", mem[i].opcode);
+			writefln("[%d]: %d", i, mem[i].opcode);
 		}
 		else if(mem[i].type == 1)
 		{
-			writefln("%d", mem[i].nData);
+			writefln("[%d]: %d", i, mem[i].nData);
 		}
-		else if(mem[i].type == 2)
+		else
 		{
-			writefln("%s", mem[i].cData);
+			writefln("[%d]: %s", i, mem[i].cData);
 		}
 	}
 }
@@ -233,22 +239,63 @@ void decode(string characters)
 	{
 		string currentToken = tokens[i];
 
-		int * varTest = currentToken in variable; /* Will be null if the key doesn't exist */
-		if(varTest) /* If the key exists */
+		int * intVarTest = currentToken in intVariable; /* Will be null if the key doesn't exist */
+		string * strVarTest = currentToken in strVariable;
+		int * lblTest = currentToken in labels;
+		if(intVarTest) /* If the key exists */
 		{
 			mem[i].type = 1;
-			mem[i].nData = variable[currentToken]; /* Replace it in memory with it's value */
+			mem[i].nData = intVariable[currentToken]; /* Replace it in memory with it's value */
 		} 
+		else if(strVarTest)
+		{
+			mem[i].type = 2;
+			mem[i].cData = strVariable[currentToken];
+		}
+		else if(lblTest) 
+		{
+			mem[i].type = 1;
+			mem[i].nData = labels[currentToken];
+		}
 		else if(indexOf(currentToken, "0x") != -1)
 		{
-			if(currentToken == "0x20")
+			if(currentToken == "0x20")		/* Variables */
 			{
 				dPrint("DEF OPCODE found!");
-				i++; 
+				mem[i].type = 0;
+				i++; 	
+
 				string varName = tokens[i];
 				i++;
-				int varVal = toInt(tokens[i]);
-				variable[varName] =  varVal;
+				if(isNumeric(tokens[i]))
+				{
+					int varVal = toInt(tokens[i]);
+					intVariable[varName] =  varVal;
+				}
+				else
+				{
+					if(tokens[i] == "0xC3")
+					{
+						i++;
+						string varVal;
+						while(tokens[i] != "0xC3")
+						{
+							varVal ~= tokens[i] ~ " ";
+							i++;
+						}
+						strVariable[varName] = varVal;
+					}
+				}
+			}
+			else if(currentToken == "0x21")		/* Labels */
+			{
+				dPrint("LBL OPCODE found!");
+				mem[i].type = 0;
+				mem[i].opcode = toHexadecimal(currentToken);
+				i++;
+
+				string lblName = tokens[i];
+				labels[lblName] = i;	
 			}
 			else
 			{
@@ -279,6 +326,24 @@ void execute()
 	{
 		switch(mem[i].opcode)
 		{
+			case LBL:
+				dPrint("LBL OPCODE found!");
+				while(mem[i].opcode != EOB)
+				{
+					i++;
+				}
+				break;
+			case RET:
+				dPrint("RET OPCODE found!");
+				i = returnNum;
+				break;
+			case CALL:
+				dPrint("CALL OPCODE found!");
+				i++;		
+				returnNum = i;	
+				int jmp = mem[i].nData;
+				i = jmp;
+				break;
 			case COM:
 				dPrint("COM OPCODE found!");
 				i++;
@@ -310,16 +375,7 @@ void execute()
 				dPrint("JMP OPCODE found");
 				i++;
 				int jmp = mem[i].nData;
-				if(jmp < i)
-				{
-					jmp = i - jmp;
-					i = i - jmp;
-				}
-				else
-				{
-					jmp = jmp - i;
-					i = jmp + i;
-				}
+				i = jmp;
 				break;
 			case IFE:
 				dPrint("IFE OPCODE found");
@@ -371,33 +427,96 @@ void execute()
 			case CMP:
 				dPrint("CMP OPCODE found");
 				i++;
-				int regNum = toReg(mem[i].opcode);
-				i++;
-				if(isRegister(mem[i].opcode))
-				{
-					int reg2Num = toReg(mem[i].opcode);
-					if(reg[regNum].nData == reg[reg2Num].nData)
-					{
-						flagA = 1;
-					}
-					else
-					{
-						flagA = 0;
-					}
-					break;
-				}
-				int num = mem[i].nData;
 
-				if(reg[regNum].nData == num)
+				/* Because all of these get assigned to null or 0 at runtime, if we don't assign them to different values, 
+				then they'll still evaluate to true in the comparison below. (If we're testing numbers, then num and num2 
+				will differ, but text and text2 will still be evaluated to null, and thus be equal and fuck everything
+				up) */
+				int num = 0;
+				int num2 = 1;
+				string text = "text";
+				string text2 = "text2";
+				
+				/* Finding out the first peice of data to compare, and assigning it to the variable */
+				if(mem[i].type == 0) /* Must be register or string*/
+				{
+					if(isRegister(mem[i].opcode))
+					{
+						string data = getData(mem[i].opcode);	
+						if(isNumeric(data))
+						{
+							num = toInt(data);
+						}
+						else
+						{
+							text = data;
+						}
+					}
+					/* String? */
+					else if(mem[i].opcode == STR)
+					{
+						i++;
+
+						/* Clear out the original random value we had */
+						text = "";
+
+						while(mem[i].opcode != STR)
+						{
+							text ~= mem[i].cData ~ " ";
+							i++;
+						}
+					}
+				}
+				else if(mem[i].type == 1)
+				{
+					num = mem[i].nData;
+				}
+				i++;
+
+				/* Same thing as above, but for the second peice of data */
+				if(mem[i].type == 0) /* Must be register or string */
+				{
+					int regNum = toReg(mem[i].opcode);
+					if(isRegister(mem[i].opcode))
+					{
+						string data = getData(regNum);	
+						if(isNumeric(data))
+						{
+							num2 = toInt(data);
+						}
+						else
+						{
+							text2 = data;
+						}
+					}
+					/* String? */
+					else if(mem[i].opcode == STR)
+					{
+						i++;
+
+						/* Clear out the original random value we had */
+						text2 = "";
+						while(mem[i].opcode != STR)
+						{
+							text2 ~= mem[i].cData ~ " ";
+							i++;
+						}
+					}
+				}
+				else if(mem[i].type == 1)
+				{
+					num2 = mem[i].nData;
+				}
+
+				/* The actual comparison */
+				if(num == num2 || text == text2)
 				{
 					flagA = 1;
+					break;
 				}
-				else
-				{
-					flagA = 0;
-				}
-				writeln("FlagA = ", flagA);
+				flagA = 0;	
 				break;
+
 			case INTERRUPT:
 				dPrint("Interrupt OPCODE found");
 				if(isInterrupt())
@@ -416,25 +535,25 @@ void execute()
 				memShow();
 				break;
 			case DEBUG:
-				if(debug_bit == false)
-                {
-                    debug_bit = true;
-                    dPrint("Debug mode is now on, prepare to be overloaded.");
-                }
-                else
-                {
-                    dPrint("Setting DEBUG to 0, goodbye cruel world!");
-                    debug_bit = false;
-                }
-                writeln("Setting debug bit to: ", debug_bit);
-                break;
-            case REGSET:
+				if(!debug_bit)
+				{
+				    debug_bit = true;
+				    dPrint("Debug mode is now on, prepare to be overloaded.");
+				}
+				else
+				{
+				    dPrint("Setting DEBUG to 0, goodbye cruel world!");
+				    debug_bit = false;
+				}
+				writeln("Setting debug bit to: ", debug_bit);
+				break;
+			case REGSET:
 				dPrint("REGSET OPCODE found");
 				i++;
 				int regA = mem[i].opcode;
 				string data;
 				i++;
-				if(mem[i].opcode == STR && mem[++i].cData.ptr != null) /* Only way I could get it to differentiate strings and numbers. */
+				if(mem[i].opcode == STR && mem[++i].type == 2)
 				{
 					while(mem[i].opcode != STR)
 					{
@@ -455,39 +574,40 @@ void execute()
 					}
 				}
 				break;
-			case MOV:
+			case SWP:
 				dPrint("MOV OPCODE found");
 				i++;
-				int regNumA = mem[i].opcode;
-				int regTest = regNumA;
-				i++;
-				int regNumB = mem[i].opcode;
-				int regTestB = regNumB;
-				string data = getData(regNumB);
-				if(isRegister(regTest) && isRegister(regTestB))
+				if(mem[i].opcode)
 				{
-					setReg(regNumA, data);
+					int regNumA = mem[i].opcode;
+					if(mem[i].opcode)
+					{
+						i++;
+						int regNumB = mem[i].opcode;
+						string data = getData(regNumB);
+						setReg(regNumA, data);
+					}
 				}
 				break;
-            case REGSHOW:
+            		case REGSHOW:
 				dPrint("REGSHOW OPCODE found");
 				displayReg();
 				break;
 			case ADD:
 				dPrint("ADD OPCODE found");
-				setReg(REG0, getNextInt(i) + getVal(i));
+				setReg(REG0, getNextInt(i) + getNextInt(i));
 				break;
 			case SUB:
 				dPrint("SUB OPCODE found");
-				setReg(REG0, getNextInt(i) - getVal(i));
+				setReg(REG0, getNextInt(i) - getNextInt(i));
 				break;
 			case MUL:
 				dPrint("MUL OPCODE found");
-				setReg(REG0, getNextInt(i) * getVal(i));
+				setReg(REG0, getNextInt(i) * getNextInt(i));
 				break;
 			case DIV:
 				dPrint("DIV OPCODE found");
-				setReg(REG0, getNextInt(i) / getVal(i));
+				setReg(REG0, getNextInt(i) / getNextInt(i));
 				break;
 			case PUSH:
 				dPrint("PUSH OPCODE found");
@@ -532,6 +652,8 @@ void execute()
 				dPrint("So long and thanks for all the fish!");
 				exit(0);
 			default:
+				writefln("Error: Unknown token, 0x%x, found at token number %d", mem[i].opcode, i);
+				exit(1);
 				break;
 		}
 	}
@@ -542,14 +664,12 @@ void run(string filename)
 	string fileExt = std.path.extension(filename);
 	if(fileExt == ".gl")
 	{
-		auto size = getSize(filename);
 		auto text = read(filename); /* Reading in the entire file */
 		decode(cast(string)text);
 		execute();
 	}
 	else
 	{
-		writeln("Invalid file type: " ~ fileExt);
 		exit(1);
 	}
 }

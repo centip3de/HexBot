@@ -1,4 +1,4 @@
-.PHONY: clean all dev
+.PHONY: clean all dev 
 
 all: bin/intr
 
@@ -12,3 +12,4 @@ bin/intr:
 
 clean:
 	rm -rf bin
+
